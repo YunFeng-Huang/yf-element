@@ -4,7 +4,7 @@ const NODE_ENV = process.env.NODE_ENV
 console.log(NODE_ENV == "development");
 module.exports = {
   entry:
-    NODE_ENV == "development" ? "./src/main.js" : "./src/Plugin/index.js",
+    NODE_ENV == "development" ? "./src/main.js" : "./src/plugin/index.js",
   output: {
     path: path.resolve(__dirname, './dist'),
     publicPath: '/dist/',
@@ -30,6 +30,10 @@ module.exports = {
           // other vue-loader options go here
         }
       },
+      {
+          test: /\.sass$/,
+          loaders: ["style", "css", "sass"]
+      },  
       {
         test: /\.js$/,
         loader: 'babel-loader',

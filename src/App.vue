@@ -5,7 +5,7 @@
 </template>
 
 <script>
-import VPlugin from './Plugin/search/main'
+import VPlugin from './plugin/search/main'
 export default {
   name: 'app',
   components:{

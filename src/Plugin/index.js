@@ -1,4 +1,5 @@
-import search from "./search/src/index.vue";
+import search from './search/src/index.vue';
+import elTreeTransfer from './elTreeTransfer/src/index.vue';
 
 // Vue.js 的插件应当有一个公开方法 install 。第一个参数是 Vue 构造器，第二个参数是一个可选的选项对象
 // 参考：https://cn.vuejs.org/v2/guide/plugins.html#%E5%BC%80%E5%8F%91%E6%8F%92%E4%BB%B6
@@ -7,22 +8,24 @@ import search from "./search/src/index.vue";
 // sumFunction.install = Vue => Vue.component(sumFunction.name, sumFunction);//注册组件
 
 const components = [
-  search,
-  // ...如果还有的话继续添加
+    search,
+    elTreeTransfer
+    // ...如果还有的话继续添加
 ];
 
 const install = function(Vue, opts = {}) {
-  components.map(component => {
-    Vue.component(component.name, component);
-  });
+    components.map(component => {
+        Vue.component(component.name, component);
+    });
 };
 
 /* 支持使用标签的方式引入 Vue是全局变量时，自动install */
-if (typeof window !== "undefined" && window.Vue) {
-  install(window.Vue);
+if (typeof window !== 'undefined' && window.Vue) {
+    install(window.Vue);
 }
 
 export default {
-  install,
-  search,
+    install,
+    search,
+    elTreeTransfer
 };
