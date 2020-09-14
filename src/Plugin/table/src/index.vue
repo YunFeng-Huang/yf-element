@@ -1,104 +1,163 @@
 <template>
-  <div>
-    <el-table
-      :data="tableData"
-      :span-method="arraySpanMethod"
-      :header-cell-style="getRowClass"
-      border
-      style="width: 100%">
-      <el-table-column
-        v-for="item,index in tableColumn"
-        :key="index"
-        :prop="item.props"
-        :label="item.label"
-        :width="item.width">
-      </el-table-column>
-    </el-table>
-  </div>
+    <div>
+        <el-table class="cur-table"
+            :data="tableData"
+            ref="multipleTable"
+            :header-cell-style="$root.getRowClass"
+            style="width: 100%"
+            v-loading="$root.loading"
+            :row-key="getRowKey"
+            @selection-change="handleSelectionChange"
+            :border = "border"
+            :show-summary = "showSummary"
+            :span-method="arraySpanMethod"
+            :tree-props="{children: 'children', hasChildren: 'hasChildren'}"
+            >
+            <template v-for="(item0,index0) in tableColumn">
+                <template v-if="item0.type&&item0.type==='selection'">
+                    <el-table-column :key="index0" type="selection" width="70" :reserve-selection="true"></el-table-column>
+                </template>
+                <template v-else-if="item0.type&&item0.type==='index'">
+                    <el-table-column :key="index0" type="index" label="序号" width="60"></el-table-column>
+                </template>
+                <template v-else-if="item0.options&&item0.options.length>0">
+                    <el-table-column
+                        :key="index0"
+                        :prop="item0.prop?item0.prop:''"
+                        :label="item0.label?item0.label:''"
+                        :min-width="item0.width?item.width:''" show-overflow-tooltip>
+                        <template v-slot="scope">
+                            <span v-if="(scope.row&&scope.row[item0.prop]!=='')||scope.row[item0.prop]===0">
+                                <i v-if="scope.row.iconUrlPath&&scope.row.iconUrlPath.length>0&&item0.showIcon"
+                                    class="table-pay"
+                                    :style="{background:`url(${scope.row.iconUrlPath})no-repeat center/contain`,marginRight:'4px'}"></i>
+                                <span v-for="(item1,index1) in item0.options" :key="index1">
+                                    <span :class="item0.class&&item0.class[index1].value===item1.value?item0.class[index1].label:''" v-if="scope.row[item0.prop]==item1.value">
+                                        {{item1.label}}
+                                    </span>
+                                </span>
+                                <span v-if="item0.showTooltip&&scope.row[item0.tooltipProp]">
+                                    <el-tooltip class="item pos-ab" effect="dark" offset="30"  placement="top-start">
+                                        <div slot="content">{{scope.row[item0.tooltipProp]}}</div>
+                                        <el-button type="text" class="el-icon-info"></el-button>
+                                    </el-tooltip>
+                                </span>
+                            </span>
+                            <span v-else>-</span>
+                        </template>
+                    </el-table-column>
+                </template>
+                <template v-else-if="item0.type&&item0.type==='operation'" >
+                    <el-table-column
+                        :key="index0"
+                        :label="item0.label?item0.label:''"
+                        :min-width="item0.width?item0.width:''">
+                        <template v-slot="scope">
+                            <slot :row="scope.row" :index="scope.$index"></slot>
+                        </template>
+                    </el-table-column>
+                </template>
+                <template v-else>
+                    <el-table-column
+                        :key="index0"
+                        :prop="item0.prop?item0.prop:''"
+                        :label="item0.label?item0.label:''"
+                        :min-width="item0.width?item0.width:''" show-overflow-tooltip>
+                        <template v-slot="scope">
+                            <span>{{scope.row[item0.prop]||scope.row[item0.prop]===0?scope.row[item0.prop]:'-'}}</span>
+                            <span v-if="item0.twoProp">/ {{scope.row[item0.twoPropName]}}</span>
+                        </template>
+                    </el-table-column>
+                </template>
+            </template>
+        </el-table>
+    </div>
 </template>
 
 <script>
+//twoProp 是否显示第二个字段 twoPropName 第二个字段名字
 export default {
-    name:'VElTable',
-    props:['tableData','tableColumn'],
+    name: 'VElTable',
+    // props: ['tableData', 'tableColumn','isOpenDialog','border','showSummary','show'], //isOpenDialog判断弹框打开，清理选中
+    props:{
+        tableData: {
+            type: Array
+        },
+        tableColumn:{
+            type: Array
+        },
+        isOpenDialog:{
+            type:Boolean,
+            default: false
+        },
+        border:{
+            type:Boolean,
+            default: false
+        },
+        showSummary:{
+            type:Boolean,
+            default: false
+        },
+        showKey:{
+            type:Boolean,
+            default: false
+        }
+    },
     data() {
         return {
-            spanArr:[],
-            pos:0
+            spanArr: [],
+            pos: 0
         };
     },
     created() {
-        this.getSpanArr(this.tableData);
+    },
+    watch:{
+        isOpenDialog(){
+            this.$refs.multipleTable&&this.$refs.multipleTable.clearSelection();
+        }
+    },
+    mounted(){
+
     },
     methods: {
-        getRowClass({rowIndex}) {
-            if (rowIndex == 0) {
-                return {
-                    'background':'#F6F8FC',
-                    'font-size':'1rem',
-                    'font-family':'MicrosoftYaHei',
-                    'font-weight':'400',
-                    'color':'rgba(102,102,102,1)',
-                    'padding':'0.58rem 0'
-                };
-            }
-            return '';
-
-        },
-        //列表合计逻辑
-        getSummaries (param) {
-            const { columns, data } = param;
-            const sums = [];
-            columns.forEach((column, index) => {
-                if (index === 0) {
-                    sums[index] = '合计';
-                } else if (index == 3 || index == 4|| index == 5) {
-                    const values = data.map(item => Number(item[column.property]));
-                    if (!values.every(value => isNaN(value))) {
-                        sums[index] = values.reduce((prev, curr) => {
-                            const value = Number(curr);
-                            if (!isNaN(value)) {
-                                return (Number(prev) + Number(curr)).toFixed(2);
-                            }
-                            return Number(prev).toFixed(2);
-
-                        }, 0);
-                    } else {
-                        sums[index] = '';
-                    }
-                } else {
-                    sums[index] = '--';
-                }
-            });
-            return sums;
-        },
-        getSpanArr(data) {
-            for (var i = 0; i < data.length; i++) {
-                if (i === 0) {
-                    this.spanArr.push(1);
-                    this.pos = 0;
-                } else {
-                // 判断当前元素与上一个元素是否相同
-                    if (data[i].name === data[i - 1].name) {
-                        this.spanArr[this.pos] += 1;
-                        this.spanArr.push(0);
-                    } else {
-                        this.spanArr.push(1);
-                        this.pos = i;
-                    }
-                }
-            }
-        },
         arraySpanMethod({ row, column, rowIndex, columnIndex }) {
-            if (columnIndex === 1) {
-                const _row = this.spanArr[rowIndex];
-                const _col = _row > 0 ? 1 : 0;
-                return {
-                    rowspan: _row,
-                    colspan: _col
-                };
+            if (!this.$parent.colspanMethods) {
+                return;
             }
+            let resultObject = this.$parent.colspanMethods({row, column, rowIndex, columnIndex});
+            return resultObject;
+        },
+        handleSelectionChange(value){
+            this.$emit('setSelectList',value);
+        },
+        getRowKey(row){
+            if (this.showKey){
+                let rowKey = this.$parent.getRowKey(row);
+                return rowKey;
+            }
+            return row.key;
+
+
         }
     }
 };
 </script>
+<style>
+.el-tooltip__popper{max-width:40%;}
+</style>
+<style lang="scss" scoped>
+    .table-pay {
+        display: inline-block;
+        width: 18px;
+        height: 18px;
+        background-repeat: no-repeat;
+        background-size: 100%;
+        vertical-align: middle;
+    }
+    .green {
+        color: #1eb713;
+    }
+    .red {
+        color: #f01313;
+    }
+</style>
